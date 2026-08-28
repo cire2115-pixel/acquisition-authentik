@@ -16,7 +16,7 @@ export interface NotifierResult {
 
 export async function notifier(input: NotifierInput): Promise<NotifierResult> {
   // Écrit NOTIFICATION_PENDING — provider réel branché séparément
-  const entry = appendStore('logs_activite', {
+  const entry = await appendStore('logs_activite', {
     action: 'NOTIFICATION_PENDING',
     contexte: {
       canal: input.canal,

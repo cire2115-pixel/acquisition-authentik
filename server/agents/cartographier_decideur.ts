@@ -1,4 +1,5 @@
 // Spec: CARTOGRAPHIER_DECIDEUR.md v1.0.0
+import { tavily } from '@tavily/core'
 import { callLLM } from '../lib/llm'
 import type { FicheClub } from './reperer_clubs'
 
@@ -7,6 +8,8 @@ export interface MappingDecideur {
   nom_presume: string
   mode_intro: string
   fait_recent_contexte: string
+  email_contact: string | null
+  linkedin_url: string | null
 }
 
 export interface CartographierDecideurInput {
@@ -38,14 +41,34 @@ Activité récente : ${club.activite_recente}
 Identifie le décideur réel et le meilleur mode d'introduction.`
   )
 
-  const parsed = JSON.parse(raw) as { decideur: MappingDecideur }
+  const parsed = JSON.parse(raw) as { decideur: Omit<MappingDecideur, 'email_contact' | 'linkedin_url'> }
+
+  // Recherche de contact via Tavily
+  let email_contact: string | null = null
+  let linkedin_url: string | null = null
+  try {
+    const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY! })
+    const contactSearch = await tavilyClient.search(
+      `"${club.nom}" contact email`,
+      { maxResults: 3, searchDepth: 'basic' }
+    )
+    const rawText = contactSearch.results.map((r) => r.content).join(' ')
+    const emails = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []
+    email_contact = emails.find((e) => !e.includes('noreply') && !e.includes('example') && !e.includes('sentry')) ?? null
+    const li = rawText.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/)
+    linkedin_url = li ? li[0] : null
+  } catch {
+    // Contact search is best-effort — ne bloque pas le flow
+  }
+
+  const decideur: MappingDecideur = { ...parsed.decideur, email_contact, linkedin_url }
 
   return {
-    resultat: { decideur: parsed.decideur },
+    resultat: { decideur },
     feedback_memoire: {
-      signal: parsed.decideur?.nom_presume ? 'positif' : 'negatif',
-      detail: parsed.decideur?.nom_presume
-        ? `Décideur identifié : ${parsed.decideur.nom_presume} (${parsed.decideur.role})`
+      signal: decideur.nom_presume ? 'positif' : 'negatif',
+      detail: decideur.nom_presume
+        ? `Décideur identifié : ${decideur.nom_presume} (${decideur.role})${email_contact ? ` — email : ${email_contact}` : ''}`
         : 'Impossible d\'identifier le décideur — données insuffisantes.',
     },
   }

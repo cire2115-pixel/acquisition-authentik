@@ -17,6 +17,8 @@ export interface ProspectEngage {
   score_icp: number
   decideur_nom: string
   decideur_role: string
+  email_contact: string | null
+  linkedin_url: string | null
   message_sujet: string
   message_corps: string
   statut: 'EN_ATTENTE_VALIDATION' | 'EXCLU_APESA' | 'HORS_CRITERE'
@@ -67,6 +69,8 @@ export async function qualifier_clubs(input: QualifierClubsInput): Promise<Quali
       score_icp: club.score_icp,
       decideur_nom: decideur.nom_presume,
       decideur_role: decideur.role,
+      email_contact: decideur.email_contact,
+      linkedin_url: decideur.linkedin_url,
       message_sujet: message.sujet,
       message_corps: message.corps,
       statut,

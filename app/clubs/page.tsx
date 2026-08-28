@@ -4,7 +4,8 @@ import { useState } from 'react'
 import {
   Search, MapPin, Tag, Zap, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, BarChart3, Users, Target,
-  Send, Clock, AlertCircle, Loader2,
+  Send, Clock, AlertCircle, Loader2, Mail, Linkedin,
+  X, Edit3,
 } from 'lucide-react'
 
 interface ProspectEngage {
@@ -13,6 +14,8 @@ interface ProspectEngage {
   score_icp: number
   decideur_nom: string
   decideur_role: string
+  email_contact: string | null
+  linkedin_url: string | null
   message_sujet: string
   message_corps: string
   statut: 'EN_ATTENTE_VALIDATION' | 'EXCLU_APESA' | 'HORS_CRITERE'
@@ -21,6 +24,21 @@ interface ProspectEngage {
 interface ResultatQualification {
   prospects_engages: ProspectEngage[]
   stats: { total: number; go: number; exclus: number }
+}
+
+interface ApprovedInfo {
+  prospect_id: string
+  email: string
+  sujet: string
+  corps: string
+}
+
+interface ModalState {
+  idx: number
+  prospect: ProspectEngage
+  sujet: string
+  corps: string
+  email: string
 }
 
 const CATEGORIES: Record<string, string> = {
@@ -64,16 +82,131 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
   )
 }
 
+function ReviewModal({
+  modal,
+  onClose,
+  onConfirm,
+  saving,
+}: {
+  modal: ModalState
+  onClose: () => void
+  onConfirm: (sujet: string, corps: string, email: string) => void
+  saving: boolean
+}) {
+  const [sujet, setSujet] = useState(modal.sujet)
+  const [corps, setCorps] = useState(modal.corps)
+  const [email, setEmail] = useState(modal.email)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+        {/* Header modale */}
+        <div className="flex items-start justify-between p-6 border-b border-[var(--aa-border)]">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Edit3 className="w-4 h-4 text-[var(--aa-cta)]" />
+              <span className="font-semibold text-[var(--aa-text)]">Valider le message</span>
+            </div>
+            <div className="text-sm text-[var(--aa-muted)]">
+              {modal.prospect.club_nom} — {modal.prospect.decideur_nom}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--aa-muted)] hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Corps modale */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* Email destinataire */}
+          <div>
+            <label className="block text-xs font-semibold text-[var(--aa-muted)] uppercase tracking-wide mb-1.5">
+              <Mail className="w-3 h-3 inline mr-1" />
+              Email destinataire *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@club.fr"
+              className="w-full border border-[var(--aa-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--aa-cta)] focus:border-transparent bg-white text-[var(--aa-text)] placeholder:text-slate-400"
+            />
+            {modal.prospect.linkedin_url && (
+              <a
+                href={modal.prospect.linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-1.5 text-xs text-[var(--aa-cta)] hover:underline"
+              >
+                <Linkedin className="w-3 h-3" />
+                Profil LinkedIn
+              </a>
+            )}
+          </div>
+
+          {/* Sujet */}
+          <div>
+            <label className="block text-xs font-semibold text-[var(--aa-muted)] uppercase tracking-wide mb-1.5">
+              Sujet
+            </label>
+            <input
+              type="text"
+              value={sujet}
+              onChange={(e) => setSujet(e.target.value)}
+              className="w-full border border-[var(--aa-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--aa-cta)] focus:border-transparent bg-white text-[var(--aa-text)]"
+            />
+          </div>
+
+          {/* Corps */}
+          <div>
+            <label className="block text-xs font-semibold text-[var(--aa-muted)] uppercase tracking-wide mb-1.5">
+              Message
+            </label>
+            <textarea
+              value={corps}
+              onChange={(e) => setCorps(e.target.value)}
+              rows={8}
+              className="w-full border border-[var(--aa-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--aa-cta)] focus:border-transparent bg-white text-[var(--aa-text)] leading-relaxed resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer modale */}
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-[var(--aa-border)]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-[var(--aa-muted)] hover:text-[var(--aa-text)] transition-colors cursor-pointer"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => onConfirm(sujet, corps, email)}
+            disabled={saving || !email.trim()}
+            className="flex items-center gap-2 bg-[var(--aa-cta)] hover:bg-[var(--aa-cta-hover)] text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Sauvegarde…</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4" /> Confirmer</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function MessageCard({
   prospect,
-  index,
   approved,
-  onToggle,
+  onApprove,
 }: {
   prospect: ProspectEngage
-  index: number
   approved: boolean
-  onToggle: () => void
+  onApprove: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -83,14 +216,11 @@ function MessageCard({
         approved ? 'border-green-400 bg-green-50' : 'border-[var(--aa-border)] bg-white'
       }`}
     >
-      {/* Header */}
       <div className="flex items-start gap-4 p-4">
-        {/* Score */}
         <div className="mt-0.5">
           <ScoreBadge score={prospect.score_icp} />
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-[var(--aa-text)] truncate">{prospect.club_nom}</div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -100,10 +230,18 @@ function MessageCard({
               <Users className="w-3 h-3" />
               {prospect.decideur_nom} — {ROLES[prospect.decideur_role] ?? prospect.decideur_role}
             </span>
+            {prospect.email_contact && (
+              <>
+                <span className="text-[var(--aa-border)]">·</span>
+                <span className="text-xs text-[var(--aa-cta)] flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  {prospect.email_contact}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -113,7 +251,7 @@ function MessageCard({
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <button
-            onClick={onToggle}
+            onClick={onApprove}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors duration-150 cursor-pointer ${
               approved
                 ? 'bg-green-600 text-white border-green-600'
@@ -129,7 +267,6 @@ function MessageCard({
         </div>
       </div>
 
-      {/* Message expandable */}
       {expanded && (
         <div className="border-t border-[var(--aa-border)] mx-4 mb-4 pt-3">
           <div className="text-xs font-semibold text-[var(--aa-muted)] uppercase tracking-wide mb-1">Sujet</div>
@@ -149,14 +286,21 @@ export default function ClubsPage() {
   const [loading, setLoading] = useState(false)
   const [resultat, setResultat] = useState<ResultatQualification | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [approuves, setApprouves] = useState<Set<number>>(new Set())
+
+  const [approuves, setApprouves] = useState<Map<number, ApprovedInfo>>(new Map())
+  const [modal, setModal] = useState<ModalState | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const [sending, setSending] = useState(false)
+  const [sentCount, setSentCount] = useState<number | null>(null)
 
   async function lancerQualification() {
     if (!zone.trim()) return
     setLoading(true)
     setError(null)
     setResultat(null)
-    setApprouves(new Set())
+    setApprouves(new Map())
+    setSentCount(null)
     try {
       const res = await fetch('/api/qualifier-clubs', {
         method: 'POST',
@@ -173,18 +317,88 @@ export default function ClubsPage() {
     }
   }
 
-  function toggleApprouver(idx: number) {
-    setApprouves((prev) => {
-      const next = new Set(prev)
-      next.has(idx) ? next.delete(idx) : next.add(idx)
-      return next
+  function openModal(idx: number, prospect: ProspectEngage) {
+    const already = approuves.get(idx)
+    setModal({
+      idx,
+      prospect,
+      sujet: already?.sujet ?? prospect.message_sujet,
+      corps: already?.corps ?? prospect.message_corps,
+      email: already?.email ?? prospect.email_contact ?? '',
     })
+  }
+
+  async function confirmApproval(sujet: string, corps: string, email: string) {
+    if (!modal) return
+    setSaving(true)
+    try {
+      const { prospect, idx } = modal
+      const res = await fetch('/api/approuver-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          club_nom: prospect.club_nom,
+          club_categorie: prospect.club_categorie,
+          score_icp: prospect.score_icp,
+          decideur_nom: prospect.decideur_nom,
+          decideur_role: prospect.decideur_role,
+          email_contact: email,
+          linkedin_url: prospect.linkedin_url,
+          message_sujet: sujet,
+          message_corps: corps,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      setApprouves((prev) => {
+        const next = new Map(prev)
+        next.set(idx, { prospect_id: data.prospect_id, email, sujet, corps })
+        return next
+      })
+      setModal(null)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erreur lors de l\'approbation')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function envoyerMessages() {
+    const prospect_ids = Array.from(approuves.values()).map((a) => a.prospect_id)
+    if (prospect_ids.length === 0) return
+    setSending(true)
+    try {
+      const res = await fetch('/api/envoyer-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prospect_ids }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setSentCount(data.count)
+      setApprouves(new Map())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur lors de l\'envoi')
+    } finally {
+      setSending(false)
+    }
   }
 
   const validables = resultat?.prospects_engages.filter((p) => p.statut === 'EN_ATTENTE_VALIDATION') ?? []
 
   return (
     <div className="min-h-screen bg-[var(--aa-bg)]">
+      {/* Modal */}
+      {modal && (
+        <ReviewModal
+          modal={modal}
+          onClose={() => setModal(null)}
+          onConfirm={confirmApproval}
+          saving={saving}
+        />
+      )}
+
       {/* Top bar */}
       <header className="bg-[var(--aa-primary)] text-white px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -278,6 +492,16 @@ export default function ClubsPage() {
           </div>
         )}
 
+        {/* Confirmation envoi */}
+        {sentCount !== null && (
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-xl p-4 text-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              {sentCount} message{sentCount > 1 ? 's' : ''} marqué{sentCount > 1 ? 's' : ''} comme envoyé{sentCount > 1 ? 's' : ''} — simulation enregistrée dans les logs.
+            </span>
+          </div>
+        )}
+
         {/* Stats */}
         {resultat && (
           <div className="grid grid-cols-3 gap-4">
@@ -300,12 +524,9 @@ export default function ClubsPage() {
                   </span>
                 </h2>
               </div>
-              <button
-                onClick={() => setApprouves(new Set(validables.map((_, i) => i)))}
-                className="text-xs text-[var(--aa-cta)] hover:underline cursor-pointer font-medium"
-              >
-                Tout approuver
-              </button>
+              <span className="text-xs text-[var(--aa-muted)]">
+                Cliquez "Approuver" pour relire et confirmer chaque message avant envoi
+              </span>
             </div>
 
             <div className="space-y-3">
@@ -313,9 +534,8 @@ export default function ClubsPage() {
                 <MessageCard
                   key={idx}
                   prospect={p}
-                  index={idx}
                   approved={approuves.has(idx)}
-                  onToggle={() => toggleApprouver(idx)}
+                  onApprove={() => openModal(idx, p)}
                 />
               ))}
             </div>
@@ -323,11 +543,18 @@ export default function ClubsPage() {
             {approuves.size > 0 && (
               <div className="flex items-center justify-between mt-5 pt-5 border-t border-[var(--aa-border)]">
                 <span className="text-sm text-[var(--aa-muted)]">
-                  {approuves.size} message{approuves.size > 1 ? 's' : ''} sélectionné{approuves.size > 1 ? 's' : ''}
+                  {approuves.size} message{approuves.size > 1 ? 's' : ''} prêt{approuves.size > 1 ? 's' : ''} à envoyer
                 </span>
-                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 cursor-pointer">
-                  <Send className="w-4 h-4" />
-                  Envoyer {approuves.size} message{approuves.size > 1 ? 's' : ''}
+                <button
+                  onClick={envoyerMessages}
+                  disabled={sending}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer"
+                >
+                  {sending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> Envoyer {approuves.size} message{approuves.size > 1 ? 's' : ''}</>
+                  )}
                 </button>
               </div>
             )}

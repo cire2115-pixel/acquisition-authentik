@@ -16,7 +16,7 @@ export interface JournaliserResult {
 }
 
 export async function journaliser(input: JournaliserInput): Promise<JournaliserResult> {
-  const entry = appendStore('logs_activite', {
+  const entry = await appendStore('logs_activite', {
     action: input.event_name,
     contexte: {
       processus: input.processus,
