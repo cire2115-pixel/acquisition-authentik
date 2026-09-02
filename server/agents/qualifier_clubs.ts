@@ -53,7 +53,7 @@ export async function qualifier_clubs(input: QualifierClubsInput): Promise<Quali
     // Garde APESA sur chaque club individuellement
     const clubApesa = exclure_apesa({ payload: club as unknown as Record<string, unknown>, contexte_orchestrer: contexte })
     if (clubApesa.exclu) {
-      prospects.push({ club_nom: club.nom, club_categorie: club.categorie, score_icp: club.score_icp, decideur_nom: '', decideur_role: '', message_sujet: '', message_corps: '', statut: 'EXCLU_APESA' })
+      prospects.push({ club_nom: club.nom, club_categorie: club.categorie, score_icp: club.score_icp, decideur_nom: '', decideur_role: '', email_contact: null, linkedin_url: null, message_sujet: '', message_corps: '', statut: 'EXCLU_APESA' })
       continue
     }
 
