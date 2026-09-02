@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Search, MapPin, Tag, Zap, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, BarChart3, Users, Target,
-  Send, Clock, AlertCircle, Loader2, Mail, Linkedin,
+  Send, Clock, AlertCircle, Loader2, Mail, ExternalLink,
   X, Edit3,
 } from 'lucide-react'
 
@@ -141,7 +141,7 @@ function ReviewModal({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 mt-1.5 text-xs text-[var(--aa-cta)] hover:underline"
               >
-                <Linkedin className="w-3 h-3" />
+                <ExternalLink className="w-3 h-3" />
                 Profil LinkedIn
               </a>
             )}
